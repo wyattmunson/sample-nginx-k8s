@@ -1,1 +1,1 @@
-replicas: <+env.variables.replica>
+replica: <+env.variables.replica>
