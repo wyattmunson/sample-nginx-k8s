@@ -124,5 +124,11 @@ template:
             - AllErrors
           action:
             type: StageRollback
+    variables:
+      - name: sample-stage-var
+        type: String
+        description: ""
+        required: false
+        value: hello localhost
   identifier: deploystagetemplate
   versionLabel: 0.1.0
