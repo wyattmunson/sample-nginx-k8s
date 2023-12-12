@@ -13,4 +13,6 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        targetAverageUtilization: 75 # Scale up when average CPU usage exceeds 75%
+        target:
+          type: Utilization
+          averageUtilization: 75 # Scale up when average CPU usage exceeds 75%
