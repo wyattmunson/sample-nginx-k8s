@@ -1,0 +1,128 @@
+template:
+  name: deploy-stage-template
+  type: Stage
+  projectIdentifier: W_Inc
+  orgIdentifier: SE_Sandbox
+  spec:
+    type: Deployment
+    spec:
+      deploymentType: Kubernetes
+      service:
+        serviceRef: nginxwebserver
+      execution:
+        steps:
+          - step:
+              name: Rollout Deployment
+              identifier: rolloutDeployment
+              type: K8sRollingDeploy
+              timeout: 10m
+              spec:
+                skipDryRun: false
+                pruningEnabled: false
+          - step:
+              type: K8sApply
+              name: hpa_apply
+              identifier: hpa_apply
+              spec:
+                skipDryRun: false
+                skipSteadyStateCheck: false
+                skipRendering: false
+                overrides: []
+                filePaths:
+                  - hpa.yaml
+              timeout: 10m
+              when:
+                stageStatus: Success
+                condition: <+env.identifier> == "prod_pager"
+          - step:
+              type: ShellScript
+              name: confirmation
+              identifier: confirmation
+              spec:
+                shell: Bash
+                onDelegate: true
+                source:
+                  type: Inline
+                  spec:
+                    script: echo <+pipeline.stages.deploy.spec.execution.steps.rolloutDeployment.deploymentInfoOutcome.serverInstanceInfoList[0].containerList[0].image>
+                environmentVariables: []
+                outputVariables: []
+              timeout: 10m
+              when:
+                stageStatus: Success
+                condition: <+env.identifier> == "prod_pager"
+          - step:
+              type: Container
+              name: Container_1
+              identifier: Container_1
+              spec:
+                connectorRef: account.DockerhubMansongPlatform
+                image: alpine:latest
+                command: echo <+serviceVariables.replica>
+                shell: Sh
+                infrastructure:
+                  type: KubernetesDirect
+                  spec:
+                    connectorRef: account.harness_demo
+                    namespace: default
+                    resources:
+                      limits:
+                        cpu: "0.5"
+                        memory: 500Mi
+                    annotations: {}
+                    labels: {}
+                    containerSecurityContext:
+                      capabilities:
+                        drop: []
+                        add: []
+                    nodeSelector: {}
+                reports:
+                  type: JUnit
+                  spec:
+                    paths: []
+                outputVariables: []
+                envVariables: {}
+              timeout: 10m
+          - step:
+              type: HarnessApproval
+              name: HarnessApproval_1
+              identifier: HarnessApproval_1
+              spec:
+                approvalMessage: Please review the following information and approve the pipeline progression
+                includePipelineExecutionHistory: true
+                isAutoRejectEnabled: false
+                approvers:
+                  userGroups:
+                    - account._account_all_users
+                  minimumCount: 1
+                  disallowPipelineExecutor: false
+                approverInputs: []
+              timeout: 1d
+        rollbackSteps:
+          - step:
+              name: Rollback Rollout Deployment
+              identifier: rollbackRolloutDeployment
+              type: K8sRollingRollback
+              timeout: 10m
+              spec:
+                pruningEnabled: false
+      environments:
+        metadata:
+          parallel: false
+        values:
+          - environmentRef: prod_pager
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: prodinfrapager
+          - environmentRef: dev_pager
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: devinfrapager
+    failureStrategies:
+      - onFailure:
+          errors:
+            - AllErrors
+          action:
+            type: StageRollback
+  identifier: deploystagetemplate
+  versionLabel: 0.1.0
