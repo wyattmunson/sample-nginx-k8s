@@ -1,0 +1,27 @@
+pipeline:
+  name: git-backed
+  identifier: gitbacked
+  projectIdentifier: W_Inc
+  orgIdentifier: SE_Sandbox
+  tags: {}
+  stages:
+    - stage:
+        name: basic
+        identifier: basic
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: Barrier
+                  name: Barrier_1
+                  identifier: Barrier_1
+                  spec:
+                    barrierRef: examplebarrier
+                  timeout: 10m
+        tags: {}
+  flowControl:
+    barriers:
+      - name: example-barrier
+        identifier: examplebarrier
